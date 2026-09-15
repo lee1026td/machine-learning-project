@@ -30,7 +30,13 @@ def sigmoid(z: np.ndarray) -> np.ndarray:
         `sigmoid(np.array([-1000.0, 1000.0]))` must return finite numbers,
         never `nan`.
     """
-    raise NotImplementedError
+    z = np.asarray(z, dtype=float)
+    is_nonneg = z >= 0
+    z_nonneg = np.where(is_nonneg, z, 0.0)
+    z_neg = np.where(is_nonneg, 0.0, z)
+    exp_neg_z = np.exp(-z_nonneg)
+    exp_z = np.exp(z_neg)
+    return np.where(is_nonneg, 1.0 / (1.0 + exp_neg_z), exp_z / (1.0 + exp_z))
 # ============================ END TODO (Task 1) ==============================
 
 
@@ -51,7 +57,20 @@ def softmax_loop(z: list) -> list:
     Requirement: the result must be finite for large-magnitude inputs.
         `softmax_loop([1000.0, 1001.0])` must not raise `OverflowError`.
     """
-    raise NotImplementedError
+    m = z[0]
+    for v in z:
+        if v > m:
+            m = v
+
+    exps = []
+    for v in z:
+        exps.append(math.exp(v - m))
+
+    total = 0.0
+    for e in exps:
+        total += e
+
+    return [e / total for e in exps]
 # ============================ END TODO (Task 2) ==============================
 
 
@@ -71,7 +90,10 @@ def softmax_np(z: np.ndarray) -> np.ndarray:
     Requirement: the result must be finite for large-magnitude inputs.
         `softmax_np(np.array([1000.0, 1001.0]))` must not contain `nan`.
     """
-    raise NotImplementedError
+    z = np.asarray(z, dtype=float)
+    shifted = z - np.max(z)
+    exps = np.exp(shifted)
+    return exps / np.sum(exps)
 # ============================ END TODO (Task 3) ==============================
 
 
@@ -91,7 +113,10 @@ def entropy(p: np.ndarray) -> float:
         0 * log(0) = 0, so the result stays finite (never `nan`, never `inf`).
         A one-hot `p` must give exactly 0.0.
     """
-    raise NotImplementedError
+    p = np.asarray(p, dtype=float)
+    p_safe = np.where(p > 0, p, 1.0)
+    terms = np.where(p > 0, p * np.log(p_safe), 0.0)
+    return float(-np.sum(terms))
 # ============================ END TODO (Task 4) ==============================
 
 
@@ -116,7 +141,11 @@ def cross_entropy(p: np.ndarray, q: np.ndarray) -> float:
         probability you take the logarithm of; Task 6 must use the same value.
         Do not modify the inputs in place.
     """
-    raise NotImplementedError
+    p = np.asarray(p, dtype=float)
+    q = np.asarray(q, dtype=float)
+    q_safe = np.clip(q, 1e-12, None)
+    terms = np.where(p > 0, p * np.log(q_safe), 0.0)
+    return float(-np.sum(terms))
 # ============================ END TODO (Task 5) ==============================
 
 
@@ -137,7 +166,9 @@ def kl_divergence(p: np.ndarray, q: np.ndarray) -> float:
         must satisfy the identity D_KL(p || q) = H(p, q) - H(p); a test
         checks it against your own `cross_entropy` and `entropy`.
     """
-    raise NotImplementedError
+    p = np.asarray(p, dtype=float)
+    q = np.asarray(q, dtype=float)
+    return float(cross_entropy(p, q) - entropy(p))
 # ============================ END TODO (Task 6) ==============================
 
 
@@ -170,7 +201,18 @@ def focal_loss(p: np.ndarray, q: np.ndarray, gamma: float = 2.0,
     Requirement: with `gamma=0` and `alpha=None` this must return exactly the
         same value as `cross_entropy(p, q)` — a test checks that.
     """
-    raise NotImplementedError
+    p = np.asarray(p, dtype=float)
+    q = np.asarray(q, dtype=float)
+    q_safe = np.clip(q, 1e-12, None)
+
+    if alpha is None:
+        alpha_arr = np.ones_like(p)
+    else:
+        alpha_arr = np.asarray(alpha, dtype=float)
+
+    modulating_factor = np.power(1.0 - q_safe, gamma)
+    terms = np.where(p > 0, p * alpha_arr * modulating_factor * np.log(q_safe), 0.0)
+    return float(-np.sum(terms))
 # ============================ END TODO (Task 7) ==============================
 
 
